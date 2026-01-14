@@ -1,3 +1,4 @@
+# --- Global ---
 .DS_Store
 Thumbs.db
 node_modules/
@@ -20,6 +21,7 @@ pnpm-debug.log*
 chrome-extension/dist/
 chrome-extension/build/
 chrome-extension/coverage/
+chrome-extension/.plasmo/
 
 # --- Firebase Backend ---
 .firebase/
