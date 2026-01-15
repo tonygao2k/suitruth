@@ -4,66 +4,138 @@ export const config = {
   matches: ['https://suiscan.xyz/*', 'https://suivision.xyz/*', 'https://explorer.polymedia.app/*'],
 };
 
-const SUI_ADDRESS_REGEX = /0x[a-fA-F0-9]{3,64}/; // 兼容缩写地址
+const SUI_ADDRESS_REGEX = /0x[a-fA-F0-9]{3,64}/;
+
+// 存储所有被修改过的元素，方便恢复
+const modifiedElements = new Set();
 
 const injectStyles = () => {
-  // 查找所有包含 0x 的 a 标签（SuiVision 的地址几乎全是 a 链接）
+  console.log('🟢 开始注入样式...');
+
   const addressLinks = document.querySelectorAll("a[href*='0x']");
+  let count = 0;
 
   addressLinks.forEach((el) => {
-    // 检查：是否包含地址特征 且 还没被我们插过旗子
     if (!el.dataset.suitruthProcessed && el.innerText.includes('0x')) {
       el.dataset.suitruthProcessed = 'true';
-      el.style.position = 'relative';
 
-      // 1. 创建一个 SuiTruth 认证小标签
+      // 保存原始样式
+      if (!el.dataset.suitruthOriginalBg) {
+        el.dataset.suitruthOriginalBg = el.style.backgroundColor || '';
+        el.dataset.suitruthOriginalBr = el.style.borderRadius || '';
+        el.dataset.suitruthOriginalPd = el.style.padding || '';
+      }
+
       const badge = document.createElement('span');
+      badge.className = 'suitruth-badge';
       badge.innerText = '🛡️';
       badge.title = 'SuiTruth 正在保护中';
       badge.style.cssText = `
-          margin-left: 4px;
-          font-size: 12px;
-          cursor: help;
-          display: inline-block;
-          filter: drop-shadow(0 0 2px rgba(76, 130, 251, 0.5));
-        `;
+        margin-left: 4px;
+        font-size: 12px;
+        cursor: help;
+        display: inline-block;
+        filter: drop-shadow(0 0 2px rgba(76, 130, 251, 0.5));
+      `;
 
-      // 2. 给原有的地址加一个高亮底色
       el.style.setProperty('background-color', 'rgba(76, 130, 251, 0.2)', 'important');
       el.style.setProperty('border-radius', '4px', 'important');
       el.style.setProperty('padding', '0 2px', 'important');
 
-      // 3. 将图标插入到地址后面
       el.appendChild(badge);
-
-      console.log('✅ 成功在地址旁插旗:', el.innerText);
+      modifiedElements.add(el);
+      count++;
     }
   });
+
+  console.log(`✅ 成功注入 ${count} 个标记`);
 };
 
 const removeStyle = () => {
-  console.log('remove styles');
+  console.log('🔴 开始移除样式...');
+
+  // 移除所有 badge
+  document.querySelectorAll('.suitruth-badge').forEach((badge) => {
+    badge.remove();
+  });
+
+  // 恢复所有被修改元素的原始样式
+  modifiedElements.forEach((el) => {
+    if (el && el.dataset) {
+      // 恢复原始样式
+      el.style.backgroundColor = el.dataset.suitruthOriginalBg || '';
+      el.style.borderRadius = el.dataset.suitruthOriginalBr || '';
+      el.style.padding = el.dataset.suitruthOriginalPd || '';
+
+      // 清除我们的标记
+      delete el.dataset.suitruthProcessed;
+      delete el.dataset.suitruthOriginalBg;
+      delete el.dataset.suitruthOriginalBr;
+      delete el.dataset.suitruthOriginalPd;
+    }
+  });
+
+  modifiedElements.clear();
+  console.log('✅ 样式已移除并恢复原状');
 };
 
 const pageScanner = async () => {
-  let storage, isScanActive;
+  let storage, isActive;
 
   try {
     storage = new Storage();
-    isScanActive = (await storage.get('is_scan_active')) ?? true;
+    isActive = (await storage.get('is_active')) ?? true;
   } catch (e) {
-    console.warn('⚠️ Storage error, using default:', e.message);
-    isScanActive = true;
+    console.warn('⚠️ Storage 读取失败，使用默认值');
+    isActive = true;
   }
 
-  console.log(`📊 Status: ${isScanActive ? '✅ Active' : '⏸️ Paused'}`);
+  console.log(`📊 当前状态: ${isActive ? '开启' : '暂停'}`);
 
-  if (isScanActive) injectStyles();
-  else removeStyle();
+  if (isActive) {
+    injectStyles();
+  } else {
+    removeStyle();
+  }
+};
+
+// 监听 storage 变化
+const setupStorageWatch = async () => {
+  try {
+    const storage = new Storage();
+
+    storage.watch({
+      is_active: (change) => {
+        console.log(`🔄 状态切换: ${change.newValue ? '开启' : '暂停'}`);
+
+        if (change.newValue) {
+          injectStyles();
+        } else {
+          removeStyle();
+        }
+      },
+    });
+
+    console.log('👀 已开始监听 popup 切换');
+  } catch (e) {
+    console.warn('⚠️ Storage 监听启动失败:', e);
+  }
 };
 
 // 监听动态内容加载
-const observer = new MutationObserver(() => pageScanner());
+const observer = new MutationObserver(() => {
+  // 只在激活状态下扫描新内容
+  const storage = new Storage();
+  storage.get('is_active').then((isActive) => {
+    if (isActive ?? true) {
+      injectStyles();
+    }
+  });
+});
+
 observer.observe(document.body, { childList: true, subtree: true });
 
+// 初始化
+console.log('🚀 SuiTruth Content Script 加载完成');
 pageScanner();
+setupStorageWatch();
