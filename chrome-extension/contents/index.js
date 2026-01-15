@@ -2,192 +2,68 @@ import { Storage } from '@plasmohq/storage';
 
 export const config = {
   matches: ['https://suiscan.xyz/*', 'https://suivision.xyz/*', 'https://explorer.polymedia.app/*'],
-  run_at: 'document_end',
 };
 
-const storage = new Storage();
-const SUI_ADDRESS_REGEX = /0x[a-fA-F0-9]{64}/g;
+const SUI_ADDRESS_REGEX = /0x[a-fA-F0-9]{3,64}/; // 兼容缩写地址
 
-// 注入样式
 const injectStyles = () => {
-  if (document.getElementById('suitruth-styles')) return;
+  // 查找所有包含 0x 的 a 标签（SuiVision 的地址几乎全是 a 链接）
+  const addressLinks = document.querySelectorAll("a[href*='0x']");
 
-  const style = document.createElement('style');
-  style.id = 'suitruth-styles';
-  style.textContent = `
-    .suitruth-badge {
-      display: inline-flex !important;
-      align-items: center;
-      gap: 2px;
-      padding: 1px 4px !important;
-      margin-left: 4px !important;
-      background: rgba(16, 185, 129, 0.1) !important;
-      color: #10b981 !important;
-      border: 1px solid #10b981 !important;
-      border-radius: 3px !important;
-      font-size: 9px !important;
-      font-weight: 600 !important;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
-      white-space: nowrap;
-      vertical-align: middle;
-      cursor: default;
-      line-height: 1.3 !important;
+  addressLinks.forEach((el) => {
+    // 检查：是否包含地址特征 且 还没被我们插过旗子
+    if (!el.dataset.suitruthProcessed && el.innerText.includes('0x')) {
+      el.dataset.suitruthProcessed = 'true';
+      el.style.position = 'relative';
+
+      // 1. 创建一个 SuiTruth 认证小标签
+      const badge = document.createElement('span');
+      badge.innerText = '🛡️';
+      badge.title = 'SuiTruth 正在保护中';
+      badge.style.cssText = `
+          margin-left: 4px;
+          font-size: 12px;
+          cursor: help;
+          display: inline-block;
+          filter: drop-shadow(0 0 2px rgba(76, 130, 251, 0.5));
+        `;
+
+      // 2. 给原有的地址加一个高亮底色
+      el.style.setProperty('background-color', 'rgba(76, 130, 251, 0.2)', 'important');
+      el.style.setProperty('border-radius', '4px', 'important');
+      el.style.setProperty('padding', '0 2px', 'important');
+
+      // 3. 将图标插入到地址后面
+      el.appendChild(badge);
+
+      console.log('✅ 成功在地址旁插旗:', el.innerText);
     }
-  `;
-  document.head.appendChild(style);
-  console.log('✅ SuiTruth styles injected');
+  });
 };
 
-class AddressScanner {
-  constructor() {
-    this.isActive = true;
-    this.markedElements = new Set();
-    this.observer = null;
-    this.init();
+const removeStyle = () => {
+  console.log('remove styles');
+};
+
+const pageScanner = async () => {
+  let storage, isScanActive;
+
+  try {
+    storage = new Storage();
+    isScanActive = (await storage.get('is_scan_active')) ?? true;
+  } catch (e) {
+    console.warn('⚠️ Storage error, using default:', e.message);
+    isScanActive = true;
   }
 
-  async init() {
-    try {
-      console.log('🛡️ SuiTruth Content Script Loaded!');
+  console.log(`📊 Status: ${isScanActive ? '✅ Active' : '⏸️ Paused'}`);
 
-      if (!chrome.runtime?.id) {
-        console.error('❌ Extension context invalid');
-        return;
-      }
+  if (isScanActive) injectStyles();
+  else removeStyle();
+};
 
-      injectStyles();
+// 监听动态内容加载
+const observer = new MutationObserver(() => pageScanner());
+observer.observe(document.body, { childList: true, subtree: true });
 
-      this.isActive = (await storage.get('is_active')) ?? true;
-      console.log(`📊 Status: ${this.isActive ? '✅ Active' : '⏸️ Paused'}`);
-
-      storage.watch({
-        is_active: (change) => {
-          this.isActive = change.newValue;
-          console.log(`🔄 Status: ${this.isActive ? '✅ Active' : '⏸️ Paused'}`);
-
-          if (this.isActive) {
-            this.start();
-          } else {
-            this.stop();
-          }
-        },
-      });
-
-      if (this.isActive) {
-        setTimeout(() => this.start(), 500);
-      }
-    } catch (error) {
-      console.error('❌ Init error:', error);
-    }
-  }
-
-  start() {
-    console.log('🟢 Starting scanner...');
-    this.scanPage();
-    this.startObserver();
-  }
-
-  stop() {
-    console.log('🔴 Stopping scanner...');
-    this.observer?.disconnect();
-    this.observer = null;
-    this.removeBadges();
-  }
-
-  removeBadges() {
-    document.querySelectorAll('.suitruth-badge').forEach((el) => el.remove());
-    this.markedElements.clear();
-    console.log('🧹 Badges removed');
-  }
-
-  // 检查元素是否在浮动层/弹窗中
-  isInFloatingElement(element) {
-    let el = element;
-    while (el && el !== document.body) {
-      const style = window.getComputedStyle(el);
-
-      if (
-        style.position === 'fixed' ||
-        style.position === 'absolute' ||
-        parseInt(style.zIndex) > 100 ||
-        el.className?.match?.(
-          /tooltip|popover|dropdown|modal|overlay|popup|hover|float|menu|dialog/i
-        ) ||
-        el.getAttribute?.('role')?.match?.(/tooltip|dialog|menu|listbox|popup/i)
-      ) {
-        return true;
-      }
-      el = el.parentElement;
-    }
-    return false;
-  }
-
-  scanPage() {
-    if (!this.isActive) return;
-
-    console.log('🔍 Scanning page...');
-
-    const selectors = ['a[href*="0x"]', 'code', 'span', 'div', 'td', 'p'];
-    let count = 0;
-
-    selectors.forEach((selector) => {
-      document.querySelectorAll(selector).forEach((el) => {
-        if (this.markedElements.has(el)) return;
-        if (el.querySelector('.suitruth-badge')) return;
-        if (this.isInFloatingElement(el)) return;
-
-        const text = el.textContent || '';
-        const matches = text.match(SUI_ADDRESS_REGEX);
-
-        if (matches && matches.length > 0 && el.childNodes.length <= 3) {
-          this.addBadge(el, matches[0]);
-          count++;
-        }
-      });
-    });
-
-    console.log(`✅ Added ${count} badges`);
-  }
-
-  addBadge(element, address) {
-    if (!element || this.markedElements.has(element)) return;
-    if (element.querySelector('.suitruth-badge')) return;
-
-    const tag = element.tagName?.toLowerCase();
-    if (['script', 'style', 'noscript', 'svg', 'path'].includes(tag)) return;
-    if (this.isInFloatingElement(element)) return;
-
-    try {
-      const badge = document.createElement('span');
-      badge.className = 'suitruth-badge';
-      badge.textContent = '✓ Safe';
-      badge.title = `🛡️ SuiTruth Verified\n📍 ${address.slice(0, 10)}...${address.slice(-6)}`;
-
-      element.appendChild(badge);
-      this.markedElements.add(element);
-      console.log(`✨ Badge added to <${tag}>`);
-    } catch (e) {
-      console.error('❌ Badge error:', e);
-    }
-  }
-
-  startObserver() {
-    if (this.observer) return;
-
-    this.observer = new MutationObserver(() => {
-      if (!this.isActive) return;
-      clearTimeout(this.scanTimeout);
-      this.scanTimeout = setTimeout(() => this.scanPage(), 300);
-    });
-
-    this.observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
-
-    console.log('👀 Observer started');
-  }
-}
-
-console.log('🚀 SuiTruth initializing...');
-new AddressScanner();
+pageScanner();

@@ -18,5 +18,5 @@
     "**/*.jsx",
     "**/*.ts",
     "**/*.tsx"
-  ]
+, "contents/bakcup.js.old"  ]
 }

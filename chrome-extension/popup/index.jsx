@@ -2,7 +2,7 @@ import { useStorage } from "@plasmohq/storage/hook"
 import React, { useState } from "react"
 
 function IndexPopup() {
-  const [scannerActive, setScannerActive] = useStorage("is_active", true)
+  const [scannerActive, setScannerActive] = useStorage("is_scan_active", true)
   const [showFeedback, setShowFeedback] = useState(false)
 
   const handleToggle = () => {
