@@ -1,27 +1,37 @@
 {
   "name": "suitruth",
   "version": "0.1.0",
-  "type": "module",
+  "description": "SuiTruth - Sui区块链地址监控扩展",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@plasmohq/storage": "^1.15.0",
-    "plasmo": "latest",
+    "plasmo": "0.88.0",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
-  "manifest": {
-    "host_permissions": [
-      "https://suiscan.xyz/*",
-      "https://suivision.xyz/*",
-      "https://explorer.polymedia.app/*"
-    ],
-    "permissions": [
-      "storage",
-      "activeTab",
-      "tabs"
-    ]
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "eslint-plugin-react": "^7.0.0",
+    "prettier": "^3.0.0"
   },
   "scripts": {
     "dev": "plasmo dev",
-    "build": "plasmo build"
+    "build": "plasmo build",
+    "lint": "eslint . --ext .js,.jsx",
+    "format": "prettier --write ."
+  },
+  "manifest": {
+    "host_permissions": [
+      "https://*.suiscan.xyz/*",
+      "https://*.suivision.xyz/*",
+      "https://*.polymedia.app/*"
+    ],
+    "permissions": [
+      "storage"
+    ]
   }
 }
