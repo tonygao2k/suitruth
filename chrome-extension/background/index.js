@@ -1,13 +1,13 @@
 import { Storage } from '@plasmohq/storage';
 
-const MONITORED_SITES = ['suiscan.xyz', 'suivision.xyz', 'explorer.polymedia.app'];
+const SUPPORTED_SITES = ['suiscan.xyz', 'suivision.xyz', 'polymedia.app']; // 支持的网站列表
 
 const storage = new Storage();
 
 // 检查URL是否在监控列表中
 const isMonitoredSite = (url) => {
   if (!url) return false;
-  return MONITORED_SITES.some((site) => url.includes(site));
+  return SUPPORTED_SITES.some((site) => url.includes(site));
 };
 
 // 更新badge

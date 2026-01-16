@@ -17,11 +17,48 @@ const STATUS_COLORS = {
   },
 };
 
+// 文案定义（中英文）
+const TRANSLATIONS = {
+  en: {
+    title: '🛡️ SuiTruth',
+    version: 'Version',
+    currentStatus: 'Current Status',
+    monitoring: '🟢 Monitoring',
+    paused: '🔴 Paused',
+    toggleOn: '▶️ Start Monitoring',
+    toggleOff: '⏸️ Pause Monitoring',
+    unsupportedSite: 'Unsupported Site',
+    supportedSites: '📍 Supported Sites',
+    siteList: '• SuiScan • SuiVision • Polymedia',
+  },
+  zh: {
+    title: '🛡️ SuiTruth',
+    version: '版本',
+    currentStatus: '当前状态',
+    monitoring: '🟢 正在实时监控',
+    paused: '🔴 已暂停扫描',
+    toggleOn: '▶️ 开启监控',
+    toggleOff: '⏸️ 暂停监控',
+    unsupportedSite: '不支持当前网站',
+    supportedSites: '📍 适配站点',
+    siteList: '• SuiScan • SuiVision • Polymedia',
+  },
+};
+
 function IndexPopup() {
   const [scannerActive, setScannerActive] = useStorage('is_active', true);
   const [isSupported, setIsSupported] = useState(true); // 是否为支持的网站
+  const [language, setLanguage] = useState('en'); // 默认语言为英文
 
   useEffect(() => {
+    // 检查当前系统语言
+    const userLanguage = navigator.language.toLowerCase();
+    if (userLanguage.startsWith('zh')) {
+      setLanguage('zh'); // 设置为中文
+    } else {
+      setLanguage('en'); // 设置为英文
+    }
+
     // 检查当前网站是否在支持列表中
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const url = tabs[0]?.url || '';
@@ -35,6 +72,9 @@ function IndexPopup() {
     const newValue = !scannerActive;
     setScannerActive(newValue);
   };
+
+  // 获取当前语言的文案
+  const t = TRANSLATIONS[language];
 
   // 如果不是支持的网站，只显示“不支持当前网站”
   if (!isSupported) {
@@ -54,7 +94,7 @@ function IndexPopup() {
           textAlign: 'center',
         }}
       >
-        不支持当前网站
+        {t.unsupportedSite}
       </div>
     );
   }
@@ -90,7 +130,7 @@ function IndexPopup() {
             fontWeight: '700',
           }}
         >
-          🛡️ SuiTruth
+          {t.title}
         </h2>
         <span
           style={{
@@ -102,6 +142,7 @@ function IndexPopup() {
             fontWeight: '600',
           }}
         >
+          {t.version}
           {VERSION}
         </span>
       </div>
@@ -125,7 +166,7 @@ function IndexPopup() {
             color: statusStyle.text,
           }}
         >
-          {scannerActive ? '🟢 正在实时监控' : '🔴 已暂停扫描'}
+          {scannerActive ? t.monitoring : t.monitoring}
         </div>
       </div>
 
@@ -144,7 +185,7 @@ function IndexPopup() {
           transition: 'background-color 0.3s ease', // 添加过渡动画
         }}
       >
-        {scannerActive ? '⏸️ 暂停监控' : '▶️ 开启监控'}
+        {scannerActive ? t.toggleOff : t.toggleOn}
       </button>
 
       {/* 适配站点 */}
@@ -158,8 +199,9 @@ function IndexPopup() {
           color: '#6b7280',
         }}
       >
-        <strong>📍 适配站点</strong>
-        <br />• SuiScan • SuiVision • Polymedia
+        <strong>{t.supportedSites}</strong>
+        <br />
+        {t.siteList}
       </div>
     </div>
   );

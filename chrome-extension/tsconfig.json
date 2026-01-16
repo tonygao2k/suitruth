@@ -12,11 +12,5 @@
     "skipLibCheck": true,
     "moduleResolution": "node"
   },
-  "include": [
-    ".plasmo/index.d.ts",
-    "**/*.js",
-    "**/*.jsx",
-    "**/*.ts",
-    "**/*.tsx"
-, "contents/bakcup.js.old"  ]
+  "include": [".plasmo/index.d.ts", "**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx"]
 }
