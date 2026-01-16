@@ -31,7 +31,8 @@
       "https://*.polymedia.app/*"
     ],
     "permissions": [
-      "storage"
+      "storage",
+      "tabs"
     ]
   }
 }
