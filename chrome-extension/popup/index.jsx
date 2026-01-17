@@ -39,6 +39,7 @@ const TRANSLATIONS = {
     typePackage: 'Contract',
     typeObject: 'Object',
     typeAccount: 'Wallet',
+    typeAddress: 'Address',
     typeUnknown: 'Unknown',
   },
   zh: {
@@ -54,7 +55,7 @@ const TRANSLATIONS = {
     siteList: '• SuiScan • SuiVision • Polymedia',
     visitSite: '请访问支持的网站以使用 SuiTruth。',
     // 图例部分
-    legend: '📖 Badge 图例',
+    legend: '📖 图例说明',
     riskLevels: '风险级别（背景色）',
     addressTypes: '地址类型（图标）',
     riskSafe: '安全',
@@ -68,6 +69,7 @@ const TRANSLATIONS = {
     typePackage: '合约',
     typeObject: '对象',
     typeAccount: '钱包',
+    typeAddress: '地址',
     typeUnknown: '未知',
   },
 };
@@ -86,11 +88,12 @@ const safeGetHostname = (url) => {
 
 /**
  * 🏷️ Badge 预览组件
+ * 🔧 颜色与 badgeManager.js 保持同步
  */
 const BadgePreview = ({ icon, label, riskLevel }) => {
   const colors = {
     safe: { bg: '#ecfdf5', color: '#059669', border: '#a7f3d0' },
-    neutral: { bg: '#f3f4f6', color: '#6b7280', border: '#d1d5db' },
+    neutral: { bg: '#eff6ff', color: '#3b82f6', border: '#bfdbfe' }, // 🔧 改为蓝色
     suspicious: { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
     danger: { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
   };
@@ -120,6 +123,7 @@ const BadgePreview = ({ icon, label, riskLevel }) => {
 
 /**
  * 📖 图例说明组件
+ * 🔧 图标与 badgeManager.js TYPE_ICONS 保持同步
  */
 const LegendSection = ({ t }) => {
   const [expanded, setExpanded] = useState(false);
@@ -153,7 +157,7 @@ const LegendSection = ({ t }) => {
               <LegendItem
                 badge={
                   <BadgePreview
-                    icon="🛡️"
+                    icon="🔵"
                     label={t.riskNeutral}
                     riskLevel="neutral"
                   />
@@ -183,7 +187,7 @@ const LegendSection = ({ t }) => {
             </div>
           </div>
 
-          {/* 地址类型说明 */}
+          {/* 地址类型说明 - 🔧 图标与 badgeManager.js 同步 */}
           <div style={styles.legendSection}>
             <div style={styles.legendSectionTitle}>{t.addressTypes}</div>
             <div style={styles.typeGrid}>
@@ -192,12 +196,16 @@ const LegendSection = ({ t }) => {
                 label={t.typePackage}
               />
               <TypeItem
-                icon="🎁"
+                icon="🔷"
                 label={t.typeObject}
               />
               <TypeItem
-                icon="👤"
+                icon="💰"
                 label={t.typeAccount}
+              />
+              <TypeItem
+                icon="🏷️"
+                label={t.typeAddress}
               />
               <TypeItem
                 icon="❓"
@@ -323,7 +331,7 @@ function IndexPopup() {
   );
 }
 
-// 样式
+// 样式 - 🔧 调整 typeGrid 为 5 列
 const styles = {
   container: {
     width: 300,
@@ -462,7 +470,7 @@ const styles = {
   },
   typeGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
+    gridTemplateColumns: 'repeat(5, 1fr)', // 🔧 改为 5 列
     gap: '8px',
   },
   typeItem: {

@@ -156,7 +156,7 @@ export const generateStyles = () => `
     border: 1px solid #a7f3d0;
   }
 
-  /* 🛡️ 中性 - 蓝色背景（更好看）*/
+  /* 🔵 中性 - 蓝色背景（更好看）*/
   .${BADGE_CLASS}--neutral {
     background-color: #eff6ff;
     color: #3b82f6;
