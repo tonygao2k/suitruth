@@ -55,7 +55,7 @@ const TRANSLATIONS = {
     siteList: '• SuiScan • SuiVision • Polymedia',
     visitSite: '请访问支持的网站以使用 SuiTruth。',
     // 图例部分
-    legend: '📖 图例说明',
+    legend: '📖 标记说明',
     riskLevels: '风险级别（背景色）',
     addressTypes: '地址类型（图标）',
     riskSafe: '安全',
