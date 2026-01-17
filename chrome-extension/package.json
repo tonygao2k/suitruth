@@ -1,7 +1,23 @@
 {
   "name": "suitruth",
+  "displayName": "SuiTruth - Sui Blockchain Security Guard",
   "version": "0.1.0",
-  "description": "SuiTruth - Sui区块链地址监控扩展",
+  "description": "🛡️ SuiTruth - Sui 区块链地址监控扩展，实时识别假币和恶意合约",
+  "author": "Tony Gao <tonygao2k@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tonygao2k/suitruth"
+  },
+  "keywords": [
+    "sui",
+    "blockchain",
+    "security",
+    "chrome-extension",
+    "web3",
+    "defi"
+  ],
   "engines": {
     "node": ">=18.0.0"
   },
@@ -12,33 +28,44 @@
     "react-dom": "18.2.0"
   },
   "devDependencies": {
-    "eslint": "^8.0.0",
-    "eslint-config-prettier": "^9.0.0",
-    "eslint-plugin-prettier": "^5.0.0",
-    "eslint-plugin-react": "^7.0.0",
-    "prettier": "^3.0.0",
-    "vitest": "^1.0.0",
+    "@types/chrome": "^0.0.260",
+    "@vitest/coverage-v8": "^1.0.0",
     "@vitest/ui": "^1.0.0",
-    "@vitest/coverage-v8": "^1.0.0"
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.0",
+    "eslint-plugin-react": "^7.34.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.2.0",
+    "vitest": "^1.3.0"
   },
   "scripts": {
     "dev": "plasmo dev",
     "build": "plasmo build",
-    "lint": "eslint . --ext .js,.jsx",
-    "format": "prettier --write .",
+    "build:prod": "plasmo build --zip",
+    "package": "plasmo package",
+    "clean": "rm -rf build .plasmo",
+    "lint": "eslint . --ext .js,.jsx --ignore-path .gitignore",
+    "lint:fix": "eslint . --ext .js,.jsx --fix --ignore-path .gitignore",
+    "format": "prettier --write \"**/*.{js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{js,jsx,json,md}\"",
     "test": "vitest",
+    "test:run": "vitest run",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepare": "echo '✅ Ready to develop SuiTruth!'"
   },
   "manifest": {
     "host_permissions": [
       "https://*.suiscan.xyz/*",
       "https://*.suivision.xyz/*",
-      "https://*.polymedia.app/*"
+      "https://*.polymedia.app/*",
+      "https://fullnode.mainnet.sui.io/*"
     ],
     "permissions": [
       "storage",
-      "tabs"
+      "tabs",
+      "activeTab"
     ]
   }
 }

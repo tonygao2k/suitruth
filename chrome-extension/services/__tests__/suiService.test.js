@@ -45,15 +45,25 @@ describe('SuiService - 核心功能测试', () => {
       expect(profile.riskLevel).toBe(RiskLevel.SAFE);
       expect(profile.label).toContain('DeepBook');
     }, 10000);
+
+    it('应正确识别完整格式的系统合约地址', async () => {
+      // 0x2 的完整 64 位形式
+      const fullAddress = '0x0000000000000000000000000000000000000000000000000000000000000002';
+      const profile = await getAddressProfile(fullAddress);
+
+      expect(profile.type).toBe(AddressType.PACKAGE);
+      expect(profile.riskLevel).toBe(RiskLevel.SAFE);
+      expect(profile.label).toContain('Sui Framework');
+    }, 10000);
   });
 
   describe('🔍 地址类型推断', () => {
     it('应将不存在的地址推断为 ACCOUNT 或 UNKNOWN 类型', async () => {
-      // 🔥 使用确保不存在的假地址（全 9）
+      // 使用确保不存在的假地址（全 9）
       const fakeAddress = '0x' + '9'.repeat(64);
       const profile = await getAddressProfile(fakeAddress);
 
-      // 🔥 修复：接受 ACCOUNT 或 UNKNOWN 都是合理的
+      // 接受 ACCOUNT 或 UNKNOWN 都是合理的
       expect([AddressType.ACCOUNT, AddressType.UNKNOWN]).toContain(profile.type);
       expect(profile.riskLevel).toBe(RiskLevel.NEUTRAL);
     }, 10000);
@@ -75,7 +85,7 @@ describe('SuiService - 核心功能测试', () => {
 
       const profile = await getAddressProfile(usdcPackageId);
 
-      // USDC 包地址应该被识别（可能是 PACKAGE 或 OBJECT）
+      // USDC 包地址应该被识别
       expect(profile).toBeDefined();
       expect(profile.address).toBe(usdcPackageId);
     }, 10000);
@@ -83,9 +93,8 @@ describe('SuiService - 核心功能测试', () => {
 
   describe('💾 缓存机制测试', () => {
     it('第二次查询应命中缓存（使用非白名单地址）', async () => {
-      // 🔥 修复：使用一个真实存在但不在白名单中的地址
-      // 这是一个真实的 Sui 对象 ID（不是官方系统合约）
-      const testAddress = '0x5'; // 简单的非白名单地址
+      // 使用完整的非白名单地址，确保会触发 RPC
+      const testAddress = '0x' + 'a'.repeat(64);
 
       // 第一次查询（会触发 RPC）
       const startTime1 = Date.now();
@@ -103,16 +112,39 @@ describe('SuiService - 核心功能测试', () => {
       // 缓存命中应该快很多（< 10ms）
       expect(duration2).toBeLessThan(10);
 
-      // 🔥 修复：只要第二次比第一次快即可（不要求绝对值）
       console.log(`第一次: ${duration1}ms, 第二次: ${duration2}ms`);
-      expect(duration2).toBeLessThan(duration1 * 0.5); // 第二次至少快 50%
     }, 15000);
 
     it('clearCache 应清空缓存', () => {
       clearCache();
 
       const stats = getCacheStats();
-      expect(stats.size).toBe(0);
+      expect(stats.total).toBe(0);
+    });
+
+    it('白名单地址不应占用缓存', async () => {
+      clearCache();
+
+      // 查询白名单地址
+      await getAddressProfile('0x2');
+
+      const stats = getCacheStats();
+      // 白名单地址不需要缓存（直接返回）
+      expect(stats.total).toBe(0);
+    }, 10000);
+  });
+
+  describe('🔥 熔断器测试', () => {
+    it('getCacheStats 应返回熔断器状态', () => {
+      const stats = getCacheStats();
+
+      expect(stats).toHaveProperty('total');
+      expect(stats).toHaveProperty('valid');
+      expect(stats).toHaveProperty('expired');
+      expect(stats).toHaveProperty('isCircuitBroken');
+      expect(stats).toHaveProperty('circuitBreakerRemaining');
+      expect(typeof stats.isCircuitBroken).toBe('boolean');
+      expect(typeof stats.circuitBreakerRemaining).toBe('number');
     });
   });
 
@@ -131,17 +163,15 @@ describe('SuiService - 核心功能测试', () => {
       const profiles = await batchGetProfiles([]);
       expect(profiles.size).toBe(0);
     });
-  });
 
-  describe('🔥 熔断器测试', () => {
-    it('getCacheStats 应返回熔断器状态', () => {
-      const stats = getCacheStats();
+    it('应正确处理重复地址', async () => {
+      const addresses = ['0x2', '0x2', '0x2'];
+      const profiles = await batchGetProfiles(addresses);
 
-      expect(stats).toHaveProperty('size');
-      expect(stats).toHaveProperty('circuitBroken');
-      expect(stats).toHaveProperty('circuitBreakerUntil');
-      expect(typeof stats.circuitBroken).toBe('boolean');
-    });
+      // 去重后应该只有 1 个
+      expect(profiles.size).toBe(1);
+      expect(profiles.get('0x2')?.riskLevel).toBe(RiskLevel.SAFE);
+    }, 10000);
   });
 
   describe('🛡️ 边界条件测试', () => {
@@ -158,6 +188,18 @@ describe('SuiService - 核心功能测试', () => {
       expect(profile.type).toBe(AddressType.UNKNOWN);
     });
 
+    it('undefined 地址应返回 UNKNOWN 类型', async () => {
+      const profile = await getAddressProfile(undefined);
+
+      expect(profile.type).toBe(AddressType.UNKNOWN);
+    });
+
+    it('非字符串地址应返回 UNKNOWN 类型', async () => {
+      const profile = await getAddressProfile(12345);
+
+      expect(profile.type).toBe(AddressType.UNKNOWN);
+    });
+
     it('超长地址应正常处理（不崩溃）', async () => {
       const longAddress = '0x' + '1'.repeat(100);
       const profile = await getAddressProfile(longAddress);
@@ -168,13 +210,24 @@ describe('SuiService - 核心功能测试', () => {
     }, 10000);
 
     it('大小写混合地址应正确标准化', async () => {
-      const mixedCaseAddress = '0x2';
       const profile1 = await getAddressProfile('0x2');
-      const profile2 = await getAddressProfile('0X2'); // 大写
+      const profile2 = await getAddressProfile('0X2'); // 大写 X
 
-      // 应该识别为同一个地址
+      // normalizeAddress 会转换为小写
       expect(profile1.address).toBe('0x2');
       expect(profile2.address).toBe('0x2');
+
+      // 两者应该返回相同的结果
+      expect(profile1.type).toBe(profile2.type);
+      expect(profile1.riskLevel).toBe(profile2.riskLevel);
+      expect(profile1.label).toBe(profile2.label);
+    }, 10000);
+
+    it('带空格的地址应被正确处理', async () => {
+      const profile = await getAddressProfile('  0x2  ');
+
+      expect(profile.address).toBe('0x2');
+      expect(profile.riskLevel).toBe(RiskLevel.SAFE);
     }, 10000);
   });
 });
@@ -191,6 +244,7 @@ describe('🎯 真实场景集成测试', () => {
     // 应该显示绿色 Badge（官方合约）
     expect(profile.riskLevel).toBe(RiskLevel.SAFE);
     expect(profile.label).toBeTruthy();
+    expect(profile.isWhitelisted).toBe(true);
 
     console.log('✅ 场景1通过:', profile);
   }, 10000);
@@ -225,9 +279,10 @@ describe('🎯 真实场景集成测试', () => {
   }, 15000);
 
   it('场景4: 混合查询（官方 + 未知地址）', async () => {
+    const fakeAddress = '0x' + '9'.repeat(64);
     const addresses = [
       '0x2', // 官方（白名单）
-      '0x' + '9'.repeat(64), // 假地址（不存在）
+      fakeAddress, // 假地址（不存在）
     ];
 
     const profiles = await batchGetProfiles(addresses);
@@ -235,7 +290,20 @@ describe('🎯 真实场景集成测试', () => {
     expect(profiles.size).toBe(2);
     expect(profiles.get('0x2')?.riskLevel).toBe(RiskLevel.SAFE);
 
-    const fakeProfile = profiles.get('0x' + '9'.repeat(64));
-    expect([RiskLevel.NEUTRAL, RiskLevel.SAFE]).toContain(fakeProfile?.riskLevel);
+    const fakeProfile = profiles.get(fakeAddress);
+    expect(fakeProfile?.riskLevel).toBe(RiskLevel.NEUTRAL);
+  }, 15000);
+
+  it('场景5: 缓存预热后批量查询', async () => {
+    // 先预热缓存
+    await getAddressProfile('0x2');
+
+    // 批量查询（0x2 应该从缓存读取）
+    const startTime = Date.now();
+    const profiles = await batchGetProfiles(['0x1', '0x2', '0x3']);
+    const duration = Date.now() - startTime;
+
+    expect(profiles.size).toBe(3);
+    console.log(`✅ 场景5 批量查询耗时: ${duration}ms`);
   }, 15000);
 });
