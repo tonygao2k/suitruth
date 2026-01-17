@@ -5,23 +5,44 @@
  * 文字 = 地址类型/标签
  */
 
-// 🔧 直接定义常量，避免导入问题
-const AddressType = {
+// 🔧 定义常量并导出
+export const AddressType = {
   PACKAGE: 'package',
   OBJECT: 'object',
   ACCOUNT: 'account',
-  ADDRESS: 'address', // 🆕 添加 ADDRESS
+  ADDRESS: 'address',
   UNKNOWN: 'unknown',
 };
 
-const RiskLevel = {
+export const RiskLevel = {
   SAFE: 'safe',
   NEUTRAL: 'neutral',
   SUSPICIOUS: 'suspicious',
   DANGER: 'danger',
 };
 
-const BADGE_CLASS = 'suitruth-badge';
+export const BADGE_CLASS = 'suitruth-badge';
+
+// 🆕 白名单配置（统一管理）
+export const WHITELIST = {
+  '0x1': { label: 'Move Stdlib', type: AddressType.PACKAGE },
+  '0x2': { label: 'Sui Framework', type: AddressType.PACKAGE },
+  '0x3': { label: 'Sui System', type: AddressType.PACKAGE },
+  '0xdee9': { label: 'DeepBook', type: AddressType.PACKAGE },
+  '0xd22b24490e0bae52676651b4f56660a5ff8022a2576e0089f79b3c88d44e08f0': {
+    label: 'SuiNS',
+    type: AddressType.PACKAGE,
+  },
+  '0x0': { label: 'Sui Wallet', type: AddressType.ACCOUNT },
+  '0x0000000000000000000000000000000000000000000000000000000000000000': {
+    label: 'Sui Wallet',
+    type: AddressType.ACCOUNT,
+  },
+  '0x5306f64e312b581766351c07af79c72fcb1cd25147157fdc2f8ad76de9a3fb6a': {
+    label: 'Wormhole',
+    type: AddressType.PACKAGE,
+  },
+};
 
 /**
  * 🌐 检测是否为中文环境
@@ -39,50 +60,48 @@ const i18n = {
     types: {
       package: '合约',
       object: '对象',
-      account: '账户', // 🔧 account = 账户
-      address: '钱包', // 🆕 address = 钱包
+      account: '钱包',
+      address: '地址',
       unknown: '未知',
-      // 大写版本兼容
       PACKAGE: '合约',
       OBJECT: '对象',
-      ACCOUNT: '账户', // 🔧
-      ADDRESS: '钱包', // 🆕
+      ACCOUNT: '钱包',
+      ADDRESS: '地址',
       UNKNOWN: '未知',
     },
     fake: '假币',
     whitelist: {
-      'Move Stdlib': 'Move标准库',
-      'Sui Framework': 'Sui框架',
-      'Sui System': 'Sui系统',
-      'Sui Genesis': 'Sui官方',
-      DeepBook: 'DeepBook',
-      SuiNS: 'SuiNS',
-      Wormhole: 'Wormhole',
+      'Move Stdlib': '官方',
+      'Sui Framework': '官方',
+      'Sui System': '官方',
+      'Sui Wallet': '官方',
+      DeepBook: '官方',
+      SuiNS: '官方',
+      Wormhole: '官方',
     },
   },
   en: {
     types: {
       package: 'Contract',
       object: 'Object',
-      account: 'Account', // 🔧 account = Account
-      address: 'Wallet', // 🆕 address = Wallet
+      account: 'Wallet',
+      address: 'Address',
       unknown: 'Unknown',
-      // 大写版本兼容
       PACKAGE: 'Contract',
       OBJECT: 'Object',
-      ACCOUNT: 'Account', // 🔧
-      ADDRESS: 'Wallet', // 🆕
+      ACCOUNT: 'Wallet',
+      ADDRESS: 'Address',
       UNKNOWN: 'Unknown',
     },
     fake: 'Fake',
     whitelist: {
-      'Move Stdlib': 'Move Stdlib',
-      'Sui Framework': 'Sui Framework',
-      'Sui System': 'Sui System',
-      'Sui Genesis': 'Sui Offical',
-      DeepBook: 'DeepBook',
-      SuiNS: 'SuiNS',
-      Wormhole: 'Wormhole',
+      'Move Stdlib': 'Official',
+      'Sui Framework': 'Official',
+      'Sui System': 'Official',
+      'Sui Wallet': 'Official',
+      DeepBook: 'Official',
+      SuiNS: 'Official',
+      Wormhole: 'Official',
     },
   },
 };
@@ -95,74 +114,39 @@ const getLocale = () => {
 };
 
 /**
- * 📦 类型图标映射（支持大小写）
+ * 📦 类型图标映射
  */
 const TYPE_ICONS = {
   package: '📦',
-  object: '🎁',
-  account: '👤',
-  address: '💳', // 🆕 钱包用不同图标
+  object: '🔷', // 🔧 改为菱形，表示数据对象
+  account: '💰',
+  address: '🏷️',
   unknown: '❓',
-  // 大写版本兼容
   PACKAGE: '📦',
-  OBJECT: '🎁',
-  ACCOUNT: '👤',
-  ADDRESS: '💳', // 🆕
+  OBJECT: '🔷', // 🔧 改为菱形
+  ACCOUNT: '💰',
+  ADDRESS: '🏷️',
   UNKNOWN: '❓',
 };
 
 /**
- * 🎨 生成 Badge 样式 CSS（简化版）
+ * 🎨 生成 Badge 样式 CSS（修复版 - inline 布局，不叠加）
  */
 export const generateStyles = () => `
-  /* Badge 容器 */
-  .${BADGE_CLASS}-wrapper {
-    position: relative;
-    display: inline;
-  }
-
-  /* Badge 主体 */
+  /* Badge 主体 - inline 布局 */
   .${BADGE_CLASS} {
-    position: absolute;
-    left: 0;
-    top: 100%;
-    margin-top: 4px;
     display: inline-flex;
     align-items: center;
-    padding: 2px 8px;
+    padding: 1px 6px;
+    margin-left: 6px;
     border-radius: 4px;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     line-height: 1.4;
     white-space: nowrap;
-    gap: 4px;
-    z-index: 1000;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  /* 左上角尖角 */
-  .${BADGE_CLASS}::before {
-    content: '';
-    position: absolute;
-    top: -6px;
-    left: 12px;
-    width: 0;
-    height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-bottom: 6px solid currentColor;
-    opacity: 0.3;
-  }
-
-  .${BADGE_CLASS}::after {
-    content: '';
-    position: absolute;
-    top: -5px;
-    left: 12px;
-    width: 0;
-    height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
+    gap: 2px;
+    vertical-align: middle;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   }
 
   /* ✅ 安全 - 绿色背景 */
@@ -171,17 +155,13 @@ export const generateStyles = () => `
     color: #059669;
     border: 1px solid #a7f3d0;
   }
-  .${BADGE_CLASS}--safe::before { border-bottom-color: #a7f3d0; }
-  .${BADGE_CLASS}--safe::after { border-bottom: 5px solid #ecfdf5; }
 
-  /* 🛡️ 中性 - 灰色背景 */
+  /* 🛡️ 中性 - 蓝色背景（更好看）*/
   .${BADGE_CLASS}--neutral {
-    background-color: #f3f4f6;
-    color: #6b7280;
-    border: 1px solid #d1d5db;
+    background-color: #eff6ff;
+    color: #3b82f6;
+    border: 1px solid #bfdbfe;
   }
-  .${BADGE_CLASS}--neutral::before { border-bottom-color: #d1d5db; }
-  .${BADGE_CLASS}--neutral::after { border-bottom: 5px solid #f3f4f6; }
 
   /* ⚠️ 可疑 - 黄色背景 */
   .${BADGE_CLASS}--suspicious {
@@ -189,8 +169,6 @@ export const generateStyles = () => `
     color: #d97706;
     border: 1px solid #fde68a;
   }
-  .${BADGE_CLASS}--suspicious::before { border-bottom-color: #fde68a; }
-  .${BADGE_CLASS}--suspicious::after { border-bottom: 5px solid #fffbeb; }
 
   /* 🚫 危险 - 红色背景 */
   .${BADGE_CLASS}--danger {
@@ -198,18 +176,16 @@ export const generateStyles = () => `
     color: #dc2626;
     border: 1px solid #fecaca;
   }
-  .${BADGE_CLASS}--danger::before { border-bottom-color: #fecaca; }
-  .${BADGE_CLASS}--danger::after { border-bottom: 5px solid #fef2f2; }
 
   /* 图标 */
   .${BADGE_CLASS}__icon {
-    font-size: 12px;
+    font-size: 10px;
     line-height: 1;
   }
 
   /* 标签文字 */
   .${BADGE_CLASS}__label {
-    max-width: 100px;
+    max-width: 60px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -248,13 +224,9 @@ export const removeBadges = (siteName) => {
   const badges = document.querySelectorAll(`.${BADGE_CLASS}`);
   badges.forEach((badge) => badge.remove());
 
-  const wrappers = document.querySelectorAll(`.${BADGE_CLASS}-wrapper`);
-  wrappers.forEach((wrapper) => {
-    const parent = wrapper.parentNode;
-    while (wrapper.firstChild) {
-      parent.insertBefore(wrapper.firstChild, wrapper);
-    }
-    wrapper.remove();
+  // 清除所有处理标记
+  document.querySelectorAll('[data-suitruth-processed]').forEach((el) => {
+    delete el.dataset.suitruthProcessed;
   });
 
   console.log(`🧹 [${siteName}] 已移除 ${badges.length} 个 Badge`);
@@ -263,14 +235,9 @@ export const removeBadges = (siteName) => {
 
 /**
  * 🏷️ 获取显示信息
- * @returns { icon: string, label: string }
  */
 const getDisplayInfo = (profile) => {
   const locale = getLocale();
-
-  // 🔧 调试：打印 profile 内容
-  console.log('🔍 [Badge] profile:', JSON.stringify(profile, null, 2));
-
   const type = profile.type || 'unknown';
   const icon = TYPE_ICONS[type] || '❓';
 
@@ -280,7 +247,7 @@ const getDisplayInfo = (profile) => {
   if (profile.isFake) {
     label = locale.fake;
   }
-  // 2. 白名单 → 显示简称（如 "Sui"）
+  // 2. 白名单 → 显示 "官方"
   else if (profile.isWhitelisted && profile.label) {
     label = locale.whitelist[profile.label] || profile.label;
   }
@@ -288,23 +255,20 @@ const getDisplayInfo = (profile) => {
   else if (profile.coinInfo?.symbol) {
     label = profile.coinInfo.symbol;
   }
-  // 4. 默认 → 显示类型名称（如 "合约"、"钱包"）
+  // 4. 默认 → 显示类型名称
   else {
     label = locale.types[type] || locale.types.unknown;
   }
-
-  console.log('🏷️ [Badge] getDisplayInfo:', { type, icon, label });
 
   return { icon, label };
 };
 
 /**
- * 🏷️ 创建 Badge 元素（简化版，无 Tooltip）
+ * 🏷️ 创建 Badge 元素
  */
 export const createBadge = (profile) => {
   const badge = document.createElement('span');
 
-  // 风险级别 → 背景色（转小写）
   const riskLevel = profile.riskLevel || 'neutral';
   const riskClass = riskLevel.toLowerCase();
   badge.className = `${BADGE_CLASS} ${BADGE_CLASS}--${riskClass}`;
@@ -323,8 +287,6 @@ export const createBadge = (profile) => {
   labelEl.textContent = label;
   badge.appendChild(labelEl);
 
-  console.log('🏷️ [Badge] createBadge:', { riskLevel, riskClass, icon, label });
-
   return badge;
 };
 
@@ -332,25 +294,23 @@ export const createBadge = (profile) => {
  * 🔍 检查元素是否已有 Badge
  */
 export const hasBadge = (element) => {
-  if (element.parentNode?.classList?.contains(`${BADGE_CLASS}-wrapper`)) return true;
-  if (element.querySelector(`.${BADGE_CLASS}`)) return true;
+  if (element.dataset?.suitruthProcessed === 'true') return true;
+  if (element.nextElementSibling?.classList?.contains(BADGE_CLASS)) return true;
   return false;
 };
 
 /**
- * 📌 注入 Badge
+ * 📌 注入 Badge（简化版 - 直接插入到元素后面）
  */
 export const injectBadge = (element, badge) => {
   if (!element.parentNode) return false;
 
-  const wrapper = document.createElement('span');
-  wrapper.className = `${BADGE_CLASS}-wrapper`;
+  if (element.dataset?.suitruthProcessed === 'true') {
+    return false;
+  }
 
-  element.parentNode.insertBefore(wrapper, element);
-  wrapper.appendChild(element);
-  wrapper.appendChild(badge);
+  element.dataset.suitruthProcessed = 'true';
+  element.parentNode.insertBefore(badge, element.nextSibling);
 
   return true;
 };
-
-export { BADGE_CLASS, AddressType, RiskLevel };
